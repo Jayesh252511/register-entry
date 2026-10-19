@@ -33,7 +33,7 @@ function Dashboard() {
     setExporting(true);
     try {
       const rows = await exportEntries({ data: {} });
-      if (!rows.length) return toast.info("No entries to export yet.");
+      if (!rows.length) { toast.info("No entries to export yet."); return; }
       await downloadRegisterXlsx(rows, exportFilename(), q.data?.unit ?? "MT");
       toast.success(`Downloaded ${rows.length} entries`);
     } catch (e) {
@@ -82,7 +82,7 @@ function Dashboard() {
   );
 }
 
-function Stat({ label, value, mono }: { label: string; value?: number | string; mono?: boolean }) {
+function Stat({ label, value, mono }: { label: string; value?: number | string | undefined; mono?: boolean }) {
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>

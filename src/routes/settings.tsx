@@ -41,7 +41,7 @@ function SettingsPage() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!/^\d+$/.test(bill)) return toast.error("Next Bill No. must be a whole number");
+    if (!/^\d+$/.test(bill)) { toast.error("Next Bill No. must be a whole number"); return; }
     setSaving(true);
     try {
       await updateSettings({ data: { business_display_name: name, next_bill_number: Number(bill) } });

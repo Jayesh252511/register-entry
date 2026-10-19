@@ -55,7 +55,7 @@ function RowActions({ id }: { id: string }) {
   );
 }
 
-export function EntryCard({ r, actions = true, tone }: { r: Entry; actions?: boolean; tone?: "new" | "prev" }) {
+export function EntryCard({ r, actions = true, tone }: { r: Entry; actions?: boolean | undefined; tone?: "new" | "prev" | undefined }) {
   const ring = tone === "new" ? "border-success border-2" : "";
   return (
     <div className={`rounded-lg border bg-card p-3 ${ring}`}>
@@ -79,7 +79,7 @@ export function EntryCard({ r, actions = true, tone }: { r: Entry; actions?: boo
   );
 }
 
-function Field({ k, v, mono, strong }: { k: string; v: string; mono?: boolean; strong?: boolean }) {
+function Field({ k, v, mono, strong }: { k: string; v: string; mono?: boolean | undefined; strong?: boolean }) {
   return (
     <>
       <dt className="text-muted-foreground">{k}</dt>
@@ -104,7 +104,7 @@ export function EntryList({ rows }: { rows: Entry[] }) {
   );
 }
 
-export function PageTitle({ title, sub, children }: { title: string; sub?: string; children?: React.ReactNode }) {
+export function PageTitle({ title, sub, children }: { title: string; sub?: string | undefined; children?: React.ReactNode }) {
   return (
     <div className="no-print mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>

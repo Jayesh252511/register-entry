@@ -3,7 +3,7 @@ import type { Entry } from "./register.functions";
 export const COLUMNS = ["Sr. No.", "Date / तारीख", "Bill No.", "माल दिया", "माल लिया", "वजन", "गाड़ी नं."] as const;
 
 function parseISO(iso: string) {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = iso.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d));
 }
 

@@ -113,7 +113,7 @@ const LABELS: Record<string, string> = {
   vehicle_no: "गाड़ी नं.",
 };
 
-function Diff({ o, n }: { o: Record<string, unknown>; n: Record<string, unknown> }) {
+function Diff({ o, n }: { o: { [k: string]: string | number | null }; n: { [k: string]: string | number | null } }) {
   const changed = Object.keys(LABELS).filter((k) => String(o[k] ?? "") !== String(n[k] ?? ""));
   if (!changed.length) return <span className="text-muted-foreground"> — no field changes</span>;
   return (

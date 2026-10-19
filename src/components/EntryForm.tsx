@@ -153,7 +153,7 @@ export function EntryForm({
   );
 }
 
-function F({ label, id, error, hint, children }: { label: string; id: string; error?: string; hint?: string; children: React.ReactNode }) {
+function F({ label, id, error, hint, children }: { label: string; id: string; error?: string | undefined; hint?: string | undefined; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-sm font-semibold">{label}</Label>

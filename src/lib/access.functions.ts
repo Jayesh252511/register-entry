@@ -35,7 +35,7 @@ export const authorizeDevice = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const expected = process.env.APP_ACCESS_CODE;
+    const expected = process.env['APP_ACCESS_CODE'];
     if (!expected) return { ok: false as const, error: "Access code is not set up yet." };
     const db = await admin();
     const ip = clientIp();
