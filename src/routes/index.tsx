@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Download, List, Loader2, PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EntryList, PageTitle } from "@/components/EntryViews";
-import { exportEntries, getDashboard } from "@/lib/register.functions";
+import { orderKey, suggestNextBill, useRegister } from "@/lib/local-store";
 import { downloadRegisterXlsx, exportFilename } from "@/lib/excel";
-import { friendlyError, localToday, monthStart } from "@/lib/format";
+import { friendlyError, localToday, monthStart, sumWeights } from "@/lib/format";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,20 +21,31 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const q = useQuery({
-    queryKey: ["dashboard", localToday()],
-    queryFn: () => getDashboard({ data: { today: localToday(), monthStart: monthStart() } }),
-    refetchInterval: 60_000,
-  });
+  const { entries, ready, meta } = useRegister();
   const [exporting, setExporting] = useState(false);
+  const stats = useMemo(() => {
+    const today = localToday();
+    const ms = monthStart();
+    const month = entries.filter((e) => e.entry_date >= ms && e.entry_date <= today);
+    const units = new Set(month.filter((e) => e.weight_value !== null).map((e) => e.weight_unit ?? ""));
+    return {
+      total: entries.length,
+      today: entries.filter((e) => e.entry_date === today).length,
+      month: month.length,
+      weight: units.size > 1 ? null : sumWeights(month.map((e) => e.weight_value)),
+    };
+  }, [entries]);
 
   async function exportAll() {
     setExporting(true);
     try {
-      const rows = await exportEntries({ data: {} });
-      if (!rows.length) { toast.info("No entries to export yet."); return; }
-      await downloadRegisterXlsx(rows, exportFilename(), q.data?.unit ?? "MT");
-      toast.success(`Downloaded ${rows.length} entries`);
+      if (!entries.length) {
+        toast.info("No entries to export yet.");
+        return;
+      }
+      const list = [...entries].sort((a, b) => orderKey(a) - orderKey(b));
+      await downloadRegisterXlsx(list, exportFilename(), meta.unit);
+      toast.success(`Downloaded ${list.length} entries`);
     } catch (e) {
       toast.error("Export failed: " + friendlyError(e));
     } finally {
@@ -43,8 +53,8 @@ function Dashboard() {
     }
   }
 
-  const d = q.data;
-  const month = new Date().toLocaleString("en-IN", { month: "long" });
+  const monthName = new Date().toLocaleString("en-IN", { month: "long" });
+  const show = (v: string | number) => (ready ? v : "…");
 
   return (
     <div>
@@ -56,37 +66,33 @@ function Dashboard() {
         </Button>
       </PageTitle>
 
-      {q.error && <p className="text-destructive">{friendlyError(q.error)}</p>}
-
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Stat label="Total entries" value={d?.total} />
-        <Stat label="Today" value={d?.today} />
-        <Stat label={`${month}`} value={d?.month} />
-        <Stat label={`वजन in ${month}`} value={d ? (d.monthWeight === null ? "Mixed units" : `${Number(d.monthWeight.toFixed(6))} ${d.unit}`) : undefined} />
-        <Stat label="Next Bill No." value={d?.nextBill} mono />
+        <Stat label="Total entries" value={show(stats.total)} />
+        <Stat label="Today" value={show(stats.today)} />
+        <Stat label={monthName} value={show(stats.month)} />
+        <Stat label={`वजन in ${monthName}`} value={show(stats.weight === null ? "Mixed units" : `${stats.weight} ${meta.unit}`)} />
+        <Stat label="Next Bill No." value={show(suggestNextBill())} mono />
       </div>
 
       <h2 className="mb-3 mt-8 text-lg font-semibold">Recently added</h2>
-      {d && d.recent.length === 0 ? (
+      {ready && entries.length === 0 ? (
         <div className="rounded-xl border border-dashed bg-card p-10 text-center">
           <p className="text-lg font-semibold">Your register is ready</p>
-          <p className="mt-1 text-sm text-muted-foreground">The first bill will be No. {d.nextBill}.</p>
+          <p className="mt-1 text-sm text-muted-foreground">The first bill will be No. {suggestNextBill()}.</p>
           <Button asChild size="lg" className="mt-5"><Link to="/new"><PlusCircle className="h-4 w-4" /> Add First Entry</Link></Button>
         </div>
-      ) : d ? (
-        <EntryList rows={d.recent} />
       ) : (
-        <p className="text-muted-foreground">Loading…</p>
+        <EntryList rows={entries.slice(0, 5)} />
       )}
     </div>
   );
 }
 
-function Stat({ label, value, mono }: { label: string; value?: number | string | undefined; mono?: boolean }) {
+function Stat({ label, value, mono }: { label: string; value: number | string; mono?: boolean | undefined }) {
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`mt-1 text-2xl font-bold tabular ${mono ? "font-mono" : ""}`}>{value ?? "…"}</div>
+      <div className={`mt-1 text-2xl font-bold tabular ${mono ? "font-mono" : ""}`}>{value}</div>
     </div>
   );
 }

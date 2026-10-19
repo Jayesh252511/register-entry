@@ -1,10 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EntryForm, type FormValues } from "@/components/EntryForm";
 import { PageTitle } from "@/components/EntryViews";
-import { createEntry, getNextBill } from "@/lib/register.functions";
+import { addEntry, findDuplicateBill, suggestNextBill, useRegister } from "@/lib/local-store";
 import { friendlyError, localToday } from "@/lib/format";
 
 export const Route = createFileRoute("/new")({
@@ -19,34 +18,28 @@ export const Route = createFileRoute("/new")({
   component: NewEntry,
 });
 
-export const nextBillQuery = { queryKey: ["nextBill"], queryFn: () => getNextBill() };
-
 function NewEntry() {
   const navigate = useNavigate();
-  const qc = useQueryClient();
-  const next = useQuery({ ...nextBillQuery, staleTime: 0, refetchOnMount: "always" });
-  const requestId = useRef(crypto.randomUUID());
+  const { ready, meta, entries } = useRegister();
+  const [round, setRound] = useState(0);
 
   const initial = useMemo<FormValues>(
-    () => ({
-      entry_date: localToday(),
-      bill_no: next.data?.nextBill ?? "",
-      maal_diya: "",
-      maal_liya: "",
-      weight_value: "",
-      vehicle_no: "",
-    }),
-    [next.data?.nextBill],
+    () => ({ entry_date: localToday(), bill_no: ready ? suggestNextBill() : "", maal_diya: "", maal_liya: "", weight_value: "", vehicle_no: "" }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ready, round, meta.nextBill, entries.length],
   );
 
   async function onSubmit(v: FormValues, addAnother: boolean) {
+    const dup = findDuplicateBill(v.bill_no);
+    if (dup) {
+      toast.error(`Bill No. ${v.bill_no.trim()} is already used. Please choose a different number.`);
+      return false;
+    }
     try {
-      const saved = await createEntry({ data: { ...v, request_id: requestId.current } });
-      requestId.current = crypto.randomUUID();
-      qc.invalidateQueries();
+      const saved = await addEntry(v);
       if (addAnother) {
-        toast.success(`Saved — Bill No. ${saved.bill_no} (Sr. ${saved.register_serial_no})`);
-        await next.refetch();
+        toast.success(`Saved — Bill No. ${saved.bill_no}`);
+        setRound((r) => r + 1);
       } else {
         navigate({ to: "/entries/$id", params: { id: saved.id }, search: { saved: 1 } });
       }
@@ -60,16 +53,15 @@ function NewEntry() {
   return (
     <div>
       <PageTitle title="New Entry" sub="नई एंट्री — fill all fields and save" />
-      {next.isLoading ? (
-        <p className="text-muted-foreground">Loading next Bill No.…</p>
-      ) : next.error ? (
-        <p className="text-destructive">{friendlyError(next.error)}</p>
+      {!ready ? (
+        <p className="text-muted-foreground">Loading…</p>
       ) : (
         <EntryForm
+          key={round}
           mode="create"
           initial={initial}
-          serialLabel={`Assigned on save (next: ${next.data?.nextSerial})`}
-          unit={next.data?.unit ?? "MT"}
+          serialLabel="Assigned automatically"
+          unit={meta.unit}
           onSubmit={onSubmit}
           onCancel={() => navigate({ to: "/" })}
         />
