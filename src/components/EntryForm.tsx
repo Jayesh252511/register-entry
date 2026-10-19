@@ -59,12 +59,7 @@ export function EntryForm({
 
   function validate() {
     const e: typeof errors = {};
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(v.entry_date)) e.entry_date = "Enter a valid date";
-    if (!v.bill_no.trim()) e.bill_no = "Bill No. is required";
-    if (!v.maal_diya.trim()) e.maal_diya = "माल दिया is required";
-    if (!v.maal_liya.trim()) e.maal_liya = "माल लिया is required";
     if (v.weight_value.trim() && !/^\d+(\.\d+)?$/.test(v.weight_value.trim())) e.weight_value = "Enter a number, e.g. 12.5";
-    if (!v.vehicle_no.trim()) e.vehicle_no = "गाड़ी नं. is required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -89,6 +84,16 @@ export function EntryForm({
         e.preventDefault();
         submit(false);
       }}
+      onKeyDown={(e) => {
+        // Enter moves to the next box; on the last box it saves.
+        const t = e.target as HTMLElement;
+        if (e.key !== "Enter" || t.tagName !== "INPUT") return;
+        e.preventDefault();
+        const inputs = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement>("input:not([disabled])"));
+        const i = inputs.indexOf(t as HTMLInputElement);
+        const next = inputs[i + 1];
+        if (next) { next.focus(); next.select?.(); } else submit(false);
+      }}
       className="max-w-2xl rounded-xl border bg-card p-4 md:p-6"
       noValidate
     >
@@ -98,22 +103,22 @@ export function EntryForm({
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <F label="Date / तारीख" id="entry_date" error={errors.entry_date}>
-          <Input id="entry_date" type="date" value={v.entry_date} onChange={set("entry_date")} required />
+          <Input id="entry_date" type="date" value={v.entry_date} onChange={set("entry_date")} />
         </F>
         <F label="Bill No." id="bill_no" error={errors.bill_no} hint={mode === "create" ? "Suggested automatically — you can change it" : undefined}>
-          <Input id="bill_no" inputMode="numeric" className="font-mono text-base font-semibold" value={v.bill_no} onChange={set("bill_no")} required />
+          <Input id="bill_no" enterKeyHint="next" inputMode="numeric" className="font-mono text-base font-semibold" value={v.bill_no} onChange={set("bill_no")} />
         </F>
         <F label="माल दिया" id="maal_diya" error={errors.maal_diya}>
-          <Input id="maal_diya" list="dl-diya" value={v.maal_diya} onChange={set("maal_diya")} autoComplete="off" required />
+          <Input id="maal_diya" enterKeyHint="next" list="dl-diya" value={v.maal_diya} onChange={set("maal_diya")} autoComplete="off" />
         </F>
         <F label="माल लिया" id="maal_liya" error={errors.maal_liya}>
-          <Input id="maal_liya" list="dl-liya" value={v.maal_liya} onChange={set("maal_liya")} autoComplete="off" required />
+          <Input id="maal_liya" enterKeyHint="next" list="dl-liya" value={v.maal_liya} onChange={set("maal_liya")} autoComplete="off" />
         </F>
-        <F label={`वजन (${unit})`} id="weight_value" error={errors.weight_value} hint="Optional">
-          <Input id="weight_value" inputMode="decimal" value={v.weight_value} onChange={set("weight_value")} placeholder="e.g. 12.5" />
+        <F label={`वजन (${unit})`} id="weight_value" error={errors.weight_value}>
+          <Input id="weight_value" enterKeyHint="next" inputMode="decimal" value={v.weight_value} onChange={set("weight_value")} placeholder="e.g. 12.5" />
         </F>
         <F label="गाड़ी नं." id="vehicle_no" error={errors.vehicle_no}>
-          <Input id="vehicle_no" list="dl-veh" className="font-mono" value={v.vehicle_no} onChange={set("vehicle_no")} autoComplete="off" required />
+          <Input id="vehicle_no" enterKeyHint="done" list="dl-veh" className="font-mono" value={v.vehicle_no} onChange={set("vehicle_no")} autoComplete="off" />
         </F>
       </div>
       <datalist id="dl-diya">{sugg.data?.maal_diya.map((s) => <option key={s} value={s} />)}</datalist>

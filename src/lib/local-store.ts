@@ -118,6 +118,7 @@ export function suggestNextBill() {
 
 export function findDuplicateBill(bill: string, exceptId?: string) {
   const b = bill.trim();
+  if (!b) return null;
   for (const e of all.values()) if (!e.archived_at && e.id !== exceptId && e.bill_no === b) return e;
   return null;
 }
@@ -142,7 +143,7 @@ export type EntryInput = {
 
 function clean(v: EntryInput) {
   return {
-    entry_date: v.entry_date,
+    entry_date: v.entry_date || null,
     bill_no: v.bill_no.trim(),
     maal_diya: v.maal_diya.trim(),
     maal_liya: v.maal_liya.trim(),
@@ -204,7 +205,7 @@ async function doSync() {
       .sort((a, b) => a.created_at.localeCompare(b.created_at));
     for (const e of pending) {
       const payload = {
-        entry_date: e.entry_date,
+        entry_date: e.entry_date ?? "",
         bill_no: e.bill_no,
         maal_diya: e.maal_diya,
         maal_liya: e.maal_liya,

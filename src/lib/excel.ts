@@ -25,7 +25,7 @@ export async function downloadRegisterXlsx(rows: Entry[], filename: string, unit
   for (const r of rows) {
     ws.addRow({
       sr: r.register_serial_no,
-      date: parseISO(r.entry_date),
+      date: r.entry_date ? parseISO(r.entry_date) : null,
       bill: String(r.bill_no),
       diya: r.maal_diya,
       liya: r.maal_liya,

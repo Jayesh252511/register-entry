@@ -26,7 +26,7 @@ function Dashboard() {
   const stats = useMemo(() => {
     const today = localToday();
     const ms = monthStart();
-    const month = entries.filter((e) => e.entry_date >= ms && e.entry_date <= today);
+    const month = entries.filter((e) => !!e.entry_date && e.entry_date >= ms && e.entry_date <= today);
     const units = new Set(month.filter((e) => e.weight_value !== null).map((e) => e.weight_unit ?? ""));
     return {
       total: entries.length,
