@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Download, Loader2, Printer } from "lucide-react";
 import { toast } from "sonner";
@@ -7,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntryTable, PageTitle } from "@/components/EntryViews";
-import { exportEntries, type Entry } from "@/lib/register.functions";
+import { orderKey, useRegister, type LocalEntry as Entry } from "@/lib/local-store";
+import { filterEntries } from "@/lib/local-query";
 import { downloadRegisterXlsx, exportFilename } from "@/lib/excel";
 import { fmtDate, friendlyError, localToday, monthStart, sumWeights, toISODate } from "@/lib/format";
 
@@ -31,8 +31,8 @@ function lastMonth() {
 function Reports() {
   const [range, setRange] = useState({ from: localToday(), to: localToday() });
   const [exporting, setExporting] = useState(false);
-  const q = useQuery({ queryKey: ["report", range], queryFn: () => exportEntries({ data: range }) });
-  const rows = q.data ?? [];
+  const { entries, ready } = useRegister();
+  const rows = useMemo(() => filterEntries(entries, range).sort((a, b) => orderKey(a) - orderKey(b)), [entries, range]);
 
   const units = useMemo(() => [...new Set(rows.filter((r) => r.weight_value !== null).map((r) => r.weight_unit ?? ""))], [rows]);
   const unit = units[0] || "MT";
@@ -91,7 +91,7 @@ function Reports() {
         <div className="space-y-1"><Label className="text-xs">To</Label><Input type="date" value={range.to} onChange={(e) => e.target.value && setRange({ ...range, to: e.target.value })} /></div>
       </div>
 
-      {q.isLoading ? <p className="text-muted-foreground">Loading…</p> : q.error ? <p className="text-destructive">{friendlyError(q.error)}</p> : (
+      {!ready ? <p className="text-muted-foreground">Loading…</p> : (
         <>
           <div className="mb-6 grid grid-cols-2 gap-3 md:max-w-lg">
             <div className="rounded-lg border bg-card p-4"><div className="text-xs uppercase text-muted-foreground">Entries</div><div className="text-2xl font-bold">{rows.length}</div></div>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { SyncBadge } from "@/components/SyncBadge";
 import { BookOpen, FileBarChart, LayoutDashboard, List, PlusCircle, Search, Settings } from "lucide-react";
 
 const NAV = [
@@ -40,16 +41,17 @@ export function AppShell({ children, deviceLabel }: { children: ReactNode; devic
             </Link>
           ))}
         </nav>
-        {deviceLabel && <div className="px-4 py-4 text-xs text-nav-muted">Device: {deviceLabel}</div>}
+        <div className="space-y-2 px-4 py-4 text-xs text-nav-muted"><SyncBadge />{deviceLabel && <div>Device: {deviceLabel}</div>}</div>
       </aside>
 
       <header className="no-print sticky top-0 z-20 flex items-center justify-between bg-nav px-4 py-3 text-nav-foreground md:hidden">
         <div className="flex items-center gap-2 font-bold">
           <BookOpen className="h-5 w-5" /> Transport Register
         </div>
+        <div className="flex items-center gap-3"><SyncBadge />
         <Link to="/settings" aria-label="Settings" className="rounded-md p-1 text-nav-muted">
           <Settings className="h-5 w-5" />
-        </Link>
+        </Link></div>
       </header>
 
       <main className="min-w-0 flex-1 px-3 pb-24 pt-4 md:px-8 md:pb-10 md:pt-8">{children}</main>

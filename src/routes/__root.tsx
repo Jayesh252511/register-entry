@@ -16,6 +16,8 @@ import { getAccessStatus } from "@/lib/access.functions";
 import { AccessScreen } from "@/components/AccessScreen";
 import { AppShell } from "@/components/AppShell";
 import { Toaster } from "@/components/ui/sonner";
+import { initStore } from "@/lib/local-store";
+import { registerServiceWorker } from "@/lib/sw-register";
 
 function NotFoundComponent() {
   return (
@@ -62,7 +64,21 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  loader: () => getAccessStatus(),
+  loader: async () => {
+    try {
+      const r = await getAccessStatus();
+      if (typeof window !== "undefined") {
+        if (r.authorized) localStorage.setItem("tr_authorized", r.deviceLabel ?? "This device");
+        else localStorage.removeItem("tr_authorized");
+      }
+      return r;
+    } catch (e) {
+      // Offline: trust this device's earlier authorization; the server still checks every sync.
+      const label = typeof window !== "undefined" ? localStorage.getItem("tr_authorized") : null;
+      if (label) return { authorized: true, deviceLabel: label };
+      throw e;
+    }
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -112,6 +128,10 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const access = Route.useLoaderData();
+  useEffect(() => {
+    registerServiceWorker();
+    if (access.authorized) void initStore();
+  }, [access.authorized]);
   return (
     <QueryClientProvider client={queryClient}>
       {access.authorized ? (

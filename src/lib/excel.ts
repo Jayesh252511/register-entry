@@ -1,4 +1,4 @@
-import type { Entry } from "./register.functions";
+import type { LocalEntry as Entry } from "./local-store";
 
 export const COLUMNS = ["Sr. No.", "Date / तारीख", "Bill No.", "माल दिया", "माल लिया", "वजन", "गाड़ी नं."] as const;
 

@@ -1,10 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { EntryForm, type FormValues } from "@/components/EntryForm";
-import { PageTitle } from "@/components/EntryViews";
-import { getEntry, updateEntry } from "@/lib/register.functions";
+import { PageTitle, Serial } from "@/components/EntryViews";
+import { editEntry, findDuplicateBill, useRegister } from "@/lib/local-store";
 import { friendlyError } from "@/lib/format";
 
 export const Route = createFileRoute("/entries/$id/edit")({
@@ -22,9 +21,8 @@ export const Route = createFileRoute("/entries/$id/edit")({
 function EditEntry() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["entry", id], queryFn: () => getEntry({ data: { id } }), staleTime: 0 });
-  const e = q.data?.entry;
+  const { entries, ready } = useRegister();
+  const e = entries.find((x) => x.id === id);
   const initial = useMemo<FormValues | null>(
     () =>
       e
@@ -37,26 +35,31 @@ function EditEntry() {
             vehicle_no: e.vehicle_no,
           }
         : null,
-    [e],
+    // only reset form when switching entries
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [e?.id],
   );
 
-  if (q.isLoading) return <p className="text-muted-foreground">Loading…</p>;
-  if (q.error) return <p className="text-destructive">{friendlyError(q.error)}</p>;
+  if (!ready) return <p className="text-muted-foreground">Loading…</p>;
   if (!e || !initial) return <p className="text-muted-foreground">Entry not found.</p>;
 
   return (
     <div>
-      <PageTitle title="Edit Entry" sub={`Sr. ${e.register_serial_no} — serial number does not change`} />
+      <PageTitle title="Edit Entry" sub="Serial number does not change" />
+      {e._error && <p className="mb-4 rounded-md border border-destructive bg-card p-3 text-sm text-destructive">Could not sync: {e._error}</p>}
       <EntryForm
         mode="edit"
         initial={initial}
-        serialLabel={String(e.register_serial_no)}
+        serialLabel={e.register_serial_no ? String(e.register_serial_no) : "Assigned after sync"}
         unit={e.weight_unit ?? "MT"}
         onCancel={() => navigate({ to: "/entries/$id", params: { id } })}
         onSubmit={async (v) => {
+          if (findDuplicateBill(v.bill_no, id)) {
+            toast.error(`Bill No. ${v.bill_no.trim()} is already used. Please choose a different number.`);
+            return false;
+          }
           try {
-            await updateEntry({ data: { ...v, id } });
-            await qc.invalidateQueries();
+            await editEntry(id, v);
             toast.success("Changes saved");
             navigate({ to: "/entries/$id", params: { id } });
             return true;
@@ -66,6 +69,7 @@ function EditEntry() {
           }
         }}
       />
+      <span className="hidden"><Serial r={e} /></span>
     </div>
   );
 }

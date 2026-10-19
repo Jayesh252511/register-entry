@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Eye, Pencil } from "lucide-react";
-import type { Entry } from "@/lib/register.functions";
+import type { LocalEntry as Entry } from "@/lib/local-store";
 import { fmtDate, fmtWeight } from "@/lib/format";
 
 export function EntryTable({ rows, actions = true }: { rows: Entry[]; actions?: boolean }) {
@@ -22,7 +22,7 @@ export function EntryTable({ rows, actions = true }: { rows: Entry[]; actions?: 
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} className="border-t align-top hover:bg-accent/40">
-              <td className="px-3 py-2 tabular text-muted-foreground">{r.register_serial_no}</td>
+              <td className="px-3 py-2 tabular text-muted-foreground"><Serial r={r} /></td>
               <td className="px-3 py-2 tabular">{fmtDate(r.entry_date)}</td>
               <td className="px-3 py-2 font-mono font-medium">{r.bill_no}</td>
               <td className="break-words px-3 py-2">{r.maal_diya}</td>
@@ -60,7 +60,7 @@ export function EntryCard({ r, actions = true, tone }: { r: Entry; actions?: boo
   return (
     <div className={`rounded-lg border bg-card p-3 ${ring}`}>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Sr. {r.register_serial_no}</span>
+        <span className="text-xs text-muted-foreground">Sr. <Serial r={r} /></span>
         {actions && (
           <div className="no-print">
             <RowActions id={r.id} />
@@ -114,4 +114,10 @@ export function PageTitle({ title, sub, children }: { title: string; sub?: strin
       {children && <div className="flex flex-wrap gap-2">{children}</div>}
     </div>
   );
+}
+
+export function Serial({ r }: { r: Entry }) {
+  if (r._error) return <span className="font-semibold text-destructive" title={r._error}>⚠ Fix</span>;
+  if (r._pending) return <span className="text-primary" title="Saved on this device, will sync when online">{r.register_serial_no ?? "…"} ⟳</span>;
+  return <>{r.register_serial_no}</>;
 }

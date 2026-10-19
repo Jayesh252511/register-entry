@@ -1,11 +1,11 @@
 import { createFileRoute, Link, Outlet, useMatchRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { previousOf, suggestNextBill, useRegister } from "@/lib/local-store";
 import { CheckCircle2, List, Pencil, PlusCircle } from "lucide-react";
 import { z } from "zod";
 import { EntryCard, PageTitle } from "@/components/EntryViews";
 import { Button } from "@/components/ui/button";
-import { getEntry, getNextBill } from "@/lib/register.functions";
-import { friendlyError } from "@/lib/format";
+import { getEntry } from "@/lib/register.functions";
 
 export const Route = createFileRoute("/entries/$id")({
   validateSearch: z.object({ saved: z.number().optional() }),
@@ -29,13 +29,15 @@ function EntryPage() {
 function EntryDetail() {
   const { id } = Route.useParams();
   const { saved } = Route.useSearch();
-  const q = useQuery({ queryKey: ["entry", id], queryFn: () => getEntry({ data: { id } }) });
-  const next = useQuery({ queryKey: ["nextBill"], queryFn: () => getNextBill(), enabled: !!saved });
+  const { entries, ready } = useRegister();
+  const entry = entries.find((x) => x.id === id);
+  const synced = !!entry && !entry._pending;
+  const q = useQuery({ queryKey: ["history", id, entry?.updated_at], queryFn: () => getEntry({ data: { id } }), enabled: synced && !saved, retry: false });
+  const history = q.data?.history ?? [];
 
-  if (q.isLoading) return <p className="text-muted-foreground">Loading…</p>;
-  if (q.error) return <p className="text-destructive">{friendlyError(q.error)}</p>;
-  if (!q.data?.entry) return <p className="text-muted-foreground">Entry not found.</p>;
-  const { entry, previous, history } = q.data;
+  if (!ready) return <p className="text-muted-foreground">Loading…</p>;
+  if (!entry) return <p className="text-muted-foreground">Entry not found.</p>;
+  const previous = previousOf(entry);
 
   return (
     <div className="max-w-3xl">
@@ -45,13 +47,14 @@ function EntryDetail() {
           <div>
             <p className="font-semibold">Entry saved successfully</p>
             <p className="text-sm text-muted-foreground">
-              Bill No. {entry.bill_no} · Sr. {entry.register_serial_no}
-              {next.data && <> · Next suggested Bill No.: <span className="font-mono font-semibold text-foreground">{next.data.nextBill}</span></>}
+              Bill No. {entry.bill_no}{entry.register_serial_no ? ` · Sr. ${entry.register_serial_no}` : ""}
+              {" · "}{entry._pending ? "saved on this device, syncing…" : "synced"}
+              {" · "}Next suggested Bill No.: <span className="font-mono font-semibold text-foreground">{suggestNextBill()}</span>
             </p>
           </div>
         </div>
       ) : (
-        <PageTitle title={`Entry Sr. ${entry.register_serial_no}`} sub={`Bill No. ${entry.bill_no}`} />
+        <PageTitle title={entry.register_serial_no ? `Entry Sr. ${entry.register_serial_no}` : "Entry (waiting to sync)"} sub={`Bill No. ${entry.bill_no}`} />
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
