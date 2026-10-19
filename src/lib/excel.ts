@@ -21,9 +21,10 @@ export async function downloadRegisterXlsx(rows: Entry[], filename: string, unit
     { header: COLUMNS[4], key: "liya", width: 28 },
     { header: `${COLUMNS[5]} (${unit})`, key: "wt", width: 12, style: { numFmt: "General" } },
     { header: COLUMNS[6], key: "veh", width: 18, style: { numFmt: "@" } },
+    { header: "Status", key: "status", width: 16 },
   ];
   for (const r of rows) {
-    ws.addRow({
+    const row = ws.addRow({
       sr: r.register_serial_no,
       date: r.entry_date ? parseISO(r.entry_date) : null,
       bill: String(r.bill_no),
@@ -31,7 +32,9 @@ export async function downloadRegisterXlsx(rows: Entry[], filename: string, unit
       liya: r.maal_liya,
       wt: r.weight_value === null ? null : Number(r.weight_value),
       veh: String(r.vehicle_no),
+      status: (r as { cancelled_at?: string | null }).cancelled_at ? "BILL CANCELLED" : "",
     });
+    if ((r as { cancelled_at?: string | null }).cancelled_at) row.font = { color: { argb: "FFDC2626" }, strike: true };
   }
   const header = ws.getRow(1);
   header.font = { bold: true };
