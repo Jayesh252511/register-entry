@@ -1,0 +1,1 @@
+ALTER TABLE public.transport_entries ADD COLUMN cancelled_at timestamptz;
