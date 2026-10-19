@@ -36,7 +36,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
-  const notAuth = error?.message?.includes("DEVICE_NOT_AUTHORIZED");
+  const notAuth = (error as Error)?.message?.includes("DEVICE_NOT_AUTHORIZED");
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="max-w-md text-center">

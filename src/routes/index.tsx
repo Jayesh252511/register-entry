@@ -82,7 +82,7 @@ function Dashboard() {
   );
 }
 
-function Stat({ label, value, mono }: { label: string; value?: number | string; mono?: boolean }) {
+function Stat({ label, value, mono }: { label: string; value?: number | string | undefined; mono?: boolean }) {
   return (
     <div className="rounded-lg border bg-card p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>

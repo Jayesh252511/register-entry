@@ -55,7 +55,7 @@ function RowActions({ id }: { id: string }) {
   );
 }
 
-export function EntryCard({ r, actions = true, tone }: { r: Entry; actions?: boolean | undefined; tone?: "new" | "prev" }) {
+export function EntryCard({ r, actions = true, tone }: { r: Entry; actions?: boolean | undefined; tone?: "new" | "prev" | undefined }) {
   const ring = tone === "new" ? "border-success border-2" : "";
   return (
     <div className={`rounded-lg border bg-card p-3 ${ring}`}>
