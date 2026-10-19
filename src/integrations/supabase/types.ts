@@ -119,6 +119,57 @@ export type Database = {
         }
         Relationships: []
       }
+      import_batches: {
+        Row: {
+          candidate_count: number
+          company: string
+          created_at: string
+          device_id: string
+          duplicate_count: number
+          failed_count: number
+          filename: string
+          id: string
+          inserted_count: number
+          payload_hash: string
+          results: Json
+          review_count: number
+          status: string
+          updated_count: number
+        }
+        Insert: {
+          candidate_count?: number
+          company: string
+          created_at?: string
+          device_id: string
+          duplicate_count?: number
+          failed_count?: number
+          filename: string
+          id: string
+          inserted_count?: number
+          payload_hash: string
+          results?: Json
+          review_count?: number
+          status?: string
+          updated_count?: number
+        }
+        Update: {
+          candidate_count?: number
+          company?: string
+          created_at?: string
+          device_id?: string
+          duplicate_count?: number
+          failed_count?: number
+          filename?: string
+          id?: string
+          inserted_count?: number
+          payload_hash?: string
+          results?: Json
+          review_count?: number
+          status?: string
+          updated_count?: number
+        }
+        Relationships: []
+      }
       transport_entries: {
         Row: {
           archived_at: string | null
@@ -129,9 +180,14 @@ export type Database = {
           device_id: string | null
           entry_date: string | null
           id: string
+          import_batch_id: string | null
           maal_diya: string
           maal_liya: string
           register_serial_no: number
+          source_company: string | null
+          source_reference: string | null
+          source_system: string | null
+          source_values: Json | null
           updated_at: string
           vehicle_no: string
           weight_unit: string | null
@@ -146,9 +202,14 @@ export type Database = {
           device_id?: string | null
           entry_date?: string | null
           id?: string
+          import_batch_id?: string | null
           maal_diya?: string
           maal_liya?: string
           register_serial_no: number
+          source_company?: string | null
+          source_reference?: string | null
+          source_system?: string | null
+          source_values?: Json | null
           updated_at?: string
           vehicle_no?: string
           weight_unit?: string | null
@@ -163,21 +224,35 @@ export type Database = {
           device_id?: string | null
           entry_date?: string | null
           id?: string
+          import_batch_id?: string | null
           maal_diya?: string
           maal_liya?: string
           register_serial_no?: number
+          source_company?: string | null
+          source_reference?: string | null
+          source_system?: string | null
+          source_values?: Json | null
           updated_at?: string
           vehicle_no?: string
           weight_unit?: string | null
           weight_value?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transport_import_batch_fk"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      busy_proposed_numbers: { Args: { p_count: number }; Returns: Json }
       create_entry: {
         Args: {
           p_bill_no: string
@@ -198,9 +273,14 @@ export type Database = {
           device_id: string | null
           entry_date: string | null
           id: string
+          import_batch_id: string | null
           maal_diya: string
           maal_liya: string
           register_serial_no: number
+          source_company: string | null
+          source_reference: string | null
+          source_system: string | null
+          source_values: Json | null
           updated_at: string
           vehicle_no: string
           weight_unit: string | null
@@ -209,6 +289,40 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "transport_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      import_busy_batch: {
+        Args: {
+          p_candidates: number
+          p_company: string
+          p_device: string
+          p_filename: string
+          p_hash: string
+          p_id: string
+          p_review: number
+          p_rows: Json
+        }
+        Returns: {
+          candidate_count: number
+          company: string
+          created_at: string
+          device_id: string
+          duplicate_count: number
+          failed_count: number
+          filename: string
+          id: string
+          inserted_count: number
+          payload_hash: string
+          results: Json
+          review_count: number
+          status: string
+          updated_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "import_batches"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -233,9 +347,14 @@ export type Database = {
           device_id: string | null
           entry_date: string | null
           id: string
+          import_batch_id: string | null
           maal_diya: string
           maal_liya: string
           register_serial_no: number
+          source_company: string | null
+          source_reference: string | null
+          source_system: string | null
+          source_values: Json | null
           updated_at: string
           vehicle_no: string
           weight_unit: string | null

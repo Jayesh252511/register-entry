@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { SyncBadge } from "@/components/SyncBadge";
-import { BookOpen, FileBarChart, LayoutDashboard, List, PlusCircle, Search, Settings } from "lucide-react";
+import { BookOpen, FileBarChart, FileSpreadsheet, LayoutDashboard, List, PlusCircle, Search, Settings } from "lucide-react";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/register", label: "Full Register", icon: List },
   { to: "/search", label: "Search", icon: Search },
   { to: "/reports", label: "Reports", icon: FileBarChart },
+  { to: "/import-busy", label: "Import from BUSY Excel", icon: FileSpreadsheet },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -49,6 +50,7 @@ export function AppShell({ children, deviceLabel }: { children: ReactNode; devic
           <BookOpen className="h-5 w-5" /> Transport Register
         </div>
         <div className="flex items-center gap-3"><SyncBadge />
+        <Link to="/import-busy" aria-label="Import from BUSY Excel" title="Import from BUSY Excel" className="rounded-md p-1 text-nav-muted"><FileSpreadsheet className="h-5 w-5" /></Link>
         <Link to="/settings" aria-label="Settings" className="rounded-md p-1 text-nav-muted">
           <Settings className="h-5 w-5" />
         </Link></div>
