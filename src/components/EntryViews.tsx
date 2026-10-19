@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Eye, Pencil } from "lucide-react";
-import type { Entry } from "@/lib/register.functions";
+import type { LocalEntry as Entry } from "@/lib/local-store";
 import { fmtDate, fmtWeight } from "@/lib/format";
 
 export function EntryTable({ rows, actions = true }: { rows: Entry[]; actions?: boolean }) {
