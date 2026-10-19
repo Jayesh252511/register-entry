@@ -126,13 +126,100 @@ export const revertBusyBatch = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) => z.object({ id: z.string().uuid() }).parse(v))
   .handler(async ({ data, context }) => {
     const db = await admin();
-    const { data: result, error } = await db.rpc("revert_busy_batch", {
-      p_id: data.id,
-      p_device: context.deviceId,
-    });
-    if (error) {
-      throw new Error(`Could not revert import batch: ${error.message}`);
+
+    // 1. Try RPC function first
+    try {
+      const { data: result, error } = await db.rpc("revert_busy_batch", {
+        p_id: data.id,
+        p_device: context.deviceId,
+      });
+      if (!error && result) {
+        return result as {
+          success: boolean;
+          deleted_entries: number;
+          next_register_serial: number;
+          next_bill_number: number;
+        };
+      }
+    } catch {
+      // Fall through to direct table operations
     }
-    return result;
+
+    // 2. Direct fallback using service-role client
+    const { data: entries, error: entriesErr } = await db
+      .from("transport_entries")
+      .select("id")
+      .eq("import_batch_id", data.id);
+
+    if (entriesErr) {
+      throw new Error(`Could not query batch entries: ${entriesErr.message}`);
+    }
+
+    const entryIds = (entries ?? []).map((e) => e.id);
+
+    // Delete audit log references for entries
+    if (entryIds.length > 0) {
+      await db.from("audit_log").delete().in("entry_id", entryIds);
+      const { error: delErr } = await db
+        .from("transport_entries")
+        .delete()
+        .eq("import_batch_id", data.id);
+      if (delErr) {
+        throw new Error(`Could not delete batch entries: ${delErr.message}`);
+      }
+    }
+
+    // Delete batch record
+    await db.from("import_batches").delete().eq("id", data.id);
+
+    // Recalculate next serial and bill from remaining entries
+    const { data: remaining } = await db
+      .from("transport_entries")
+      .select("register_serial_no,bill_no")
+      .is("archived_at", null);
+
+    let maxSerial = 0;
+    let maxBill = 0;
+    for (const row of remaining ?? []) {
+      if (row.register_serial_no && row.register_serial_no > maxSerial) {
+        maxSerial = row.register_serial_no;
+      }
+      if (row.bill_no && /^\d{1,15}$/.test(row.bill_no)) {
+        const b = Number(row.bill_no);
+        if (b > maxBill) maxBill = b;
+      }
+    }
+
+    const nextSerial = Math.max(1, maxSerial + 1);
+    const nextBill = Math.max(1, maxBill + 1);
+
+    // Update app_settings
+    await db
+      .from("app_settings")
+      .update({
+        next_register_serial: nextSerial,
+        next_bill_number: nextBill,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", 1);
+
+    // Audit log
+    await db.from("audit_log").insert({
+      action: "revert_busy_batch",
+      actor_reference: `device:${context.deviceId}`,
+      new_values: {
+        batch: data.id,
+        deleted_entries: entryIds.length,
+        next_register_serial: nextSerial,
+        next_bill_number: nextBill,
+      },
+    });
+
+    return {
+      success: true,
+      deleted_entries: entryIds.length,
+      next_register_serial: nextSerial,
+      next_bill_number: nextBill,
+    };
   });
 
