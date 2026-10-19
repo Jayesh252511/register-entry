@@ -126,7 +126,7 @@ export type Database = {
           client_request_id: string | null
           created_at: string
           device_id: string | null
-          entry_date: string
+          entry_date: string | null
           id: string
           maal_diya: string
           maal_liya: string
@@ -138,17 +138,17 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
-          bill_no: string
+          bill_no?: string
           client_request_id?: string | null
           created_at?: string
           device_id?: string | null
-          entry_date: string
+          entry_date?: string | null
           id?: string
-          maal_diya: string
-          maal_liya: string
+          maal_diya?: string
+          maal_liya?: string
           register_serial_no: number
           updated_at?: string
-          vehicle_no: string
+          vehicle_no?: string
           weight_unit?: string | null
           weight_value?: number | null
         }
@@ -158,7 +158,7 @@ export type Database = {
           client_request_id?: string | null
           created_at?: string
           device_id?: string | null
-          entry_date?: string
+          entry_date?: string | null
           id?: string
           maal_diya?: string
           maal_liya?: string
@@ -192,7 +192,7 @@ export type Database = {
           client_request_id: string | null
           created_at: string
           device_id: string | null
-          entry_date: string
+          entry_date: string | null
           id: string
           maal_diya: string
           maal_liya: string
@@ -226,7 +226,7 @@ export type Database = {
           client_request_id: string | null
           created_at: string
           device_id: string | null
-          entry_date: string
+          entry_date: string | null
           id: string
           maal_diya: string
           maal_liya: string
