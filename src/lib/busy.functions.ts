@@ -120,3 +120,19 @@ export const busyHistory = createServerFn({ method: "GET" })
     if (error) throw new Error("Import history is unavailable.");
     return data ?? [];
   });
+
+export const revertBusyBatch = createServerFn({ method: "POST" })
+  .middleware([requireDevice])
+  .inputValidator((v: unknown) => z.object({ id: z.string().uuid() }).parse(v))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const { data: result, error } = await db.rpc("revert_busy_batch", {
+      p_id: data.id,
+      p_device: context.deviceId,
+    });
+    if (error) {
+      throw new Error(`Could not revert import batch: ${error.message}`);
+    }
+    return result;
+  });
+

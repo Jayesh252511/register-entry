@@ -13,6 +13,7 @@ import {
   Info,
   Loader2,
   RefreshCw,
+  RotateCcw,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -26,6 +27,7 @@ import {
   changedSource,
   detectMapping,
   duplicateFileRows,
+  extractVoucherNumber,
   generateSampleBusyWorkbook,
   parseBusyRows,
   rowIssues,
@@ -33,8 +35,8 @@ import {
   type Mapping,
 } from "@/lib/busy-model";
 import { readBusyWorkbook, type BusySheet } from "@/lib/busy-workbook";
-import { busyHistory, confirmBusy, previewBusy } from "@/lib/busy.functions";
-import { getState, sync, useRegister } from "@/lib/local-store";
+import { busyHistory, confirmBusy, previewBusy, revertBusyBatch } from "@/lib/busy.functions";
+import { getState, resetLocalStore, sync, useRegister } from "@/lib/local-store";
 
 const LABELS = {
   entry_date: "Date / तारीख",
@@ -57,6 +59,8 @@ export function BusyImport() {
   const submission = useRef<Submission | null>(null);
   const previewFn = useServerFn(previewBusy);
   const confirmFn = useServerFn(confirmBusy);
+  const revertFn = useServerFn(revertBusyBatch);
+  const [revertingId, setRevertingId] = useState<string | null>(null);
 
   const history = useQuery({
     queryKey: ["busy-history"],
@@ -91,7 +95,30 @@ export function BusyImport() {
   const sheet = sheets[sheetIndex];
   const repeats = duplicateFileRows(rows);
   const existing = new Map((comparison?.existing ?? []).map((e) => [e.source_reference, e]));
-  const frozen = working || uncertain || !!result;
+  const frozen = working || uncertain || !!result || !!revertingId;
+
+  async function handleRevert(batchId: string, filename: string) {
+    if (
+      !window.confirm(
+        `Are you sure you want to revert import "${filename}"?\n\nThis will DELETE all entries imported in this batch from the register and restore the serial / bill sequence.`,
+      )
+    ) {
+      return;
+    }
+    setRevertingId(batchId);
+    try {
+      const res = await revertFn({ data: { id: batchId } });
+      toast.success(
+        `Batch reverted: removed ${res.deleted_entries} entries and restored sequence.`,
+      );
+      await resetLocalStore();
+      await history.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to revert batch.");
+    } finally {
+      setRevertingId(null);
+    }
+  }
 
   function resetPreview() {
     setRows([]);
@@ -590,9 +617,9 @@ export function BusyImport() {
               </p>
             </div>
             <div className="rounded-md bg-muted/50 p-3 space-y-1">
-              <span className="font-semibold text-foreground">4. Safe Sequential Save</span>
+              <span className="font-semibold text-foreground">4. Bill Numbering</span>
               <p>
-                Assigns sequential register Bill Nos. (168, 169...) without duplicating vouchers.
+                Auto-uses voucher numbers (e.g. PC/1/... → Bill 1). Can also use sequential or custom numbers.
               </p>
             </div>
           </div>
@@ -997,6 +1024,41 @@ export function BusyImport() {
               >
                 Fill selected receivers
               </Button>
+              <div className="h-4 w-px bg-border mx-1" />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={frozen || !rows.length}
+                title="Extracts voucher number from BUSY ref (e.g. PC/1/26-27 -> 1, PC/185/26-27 -> 185)"
+                onClick={() => {
+                  setRows((current) =>
+                    current.map((r) => ({
+                      ...r,
+                      bill_no: extractVoucherNumber(r.source_reference),
+                    })),
+                  );
+                  toast.success("Applied BUSY Voucher numbers (1, 2, ... 185) as Bill Nos.");
+                }}
+              >
+                Use Voucher No. as Bill No.
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={frozen || !rows.length}
+                title="Clears specific bill numbers so register auto-assigns next sequential numbers"
+                onClick={() => {
+                  setRows((current) =>
+                    current.map((r) => ({
+                      ...r,
+                      bill_no: "",
+                    })),
+                  );
+                  toast.info("Cleared Bill Nos. Register will auto-assign sequential numbers.");
+                }}
+              >
+                Use Sequential Bill Nos.
+              </Button>
             </div>
           </div>
 
@@ -1282,14 +1344,34 @@ export function BusyImport() {
                     {b.failed_count} failed
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setHistoryOpen(historyOpen === b.id ? null : b.id)}
-                  className="text-xs"
-                >
-                  {historyOpen === b.id ? "Close result" : "Inspect result"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryOpen(historyOpen === b.id ? null : b.id)}
+                    className="text-xs"
+                  >
+                    {historyOpen === b.id ? "Close result" : "Inspect result"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={!online || revertingId === b.id}
+                    onClick={() => void handleRevert(b.id, b.filename)}
+                    className="text-xs"
+                    title="Undo this import, delete imported entries, and restore bill numbering sequence"
+                  >
+                    {revertingId === b.id ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Reverting…
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Undo / Revert
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {historyOpen === b.id && (

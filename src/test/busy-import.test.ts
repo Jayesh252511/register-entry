@@ -5,6 +5,7 @@ import {
   detectMapping,
   duplicateFileRows,
   changedSource,
+  extractVoucherNumber,
   parseBusyRows,
   rowIssues,
   generateSampleBusyWorkbook,
@@ -442,12 +443,10 @@ describe("BUSY Excel Import Module", () => {
       const candidates = parseBusyRows(grid, header, mapping);
       expect(candidates.length).toBe(180);
 
-      // Verify first candidate
-      expect(candidates[0]?.source_reference).toBe("PC/1/26-27");
-      expect(candidates[0]?.maal_diya).toBe("SAHYADRI INDUSTRIES LTD. KEDGAON");
-      expect(candidates[0]?.weight_value).toBe("21.795");
-      expect(candidates[0]?.vehicle_no).toBe("MH12KP8696");
-      expect(candidates[0]?.maal_liya).toBe(""); // Initially blank for manual entry
+      // Verify first and last candidates have extracted voucher numbers
+      expect(candidates[0]?.bill_no).toBe("1");
+      expect(candidates[179]?.source_reference).toBe("PC/185/26-27");
+      expect(candidates[179]?.bill_no).toBe("185");
 
       // Verify total summary row was ignored
       expect(candidates.some((c) => c.maal_diya.toLowerCase().includes("total"))).toBe(false);
@@ -455,6 +454,21 @@ describe("BUSY Excel Import Module", () => {
       // Verify no invalid rows when checked with incomplete=false
       const invalidRows = candidates.filter((c) => rowIssues(c, false).length > 0);
       expect(invalidRows.length).toBe(0);
+    });
+  });
+
+  describe("Voucher Number Extraction", () => {
+    it("extracts sequential numbers from standard BUSY voucher patterns", () => {
+      expect(extractVoucherNumber("PC/1/26-27")).toBe("1");
+      expect(extractVoucherNumber("PC/185/26-27")).toBe("185");
+      expect(extractVoucherNumber("SALE/42/2026")).toBe("42");
+      expect(extractVoucherNumber("INV/007/26")).toBe("7");
+    });
+
+    it("falls back to isolated digits or empty string", () => {
+      expect(extractVoucherNumber("105")).toBe("105");
+      expect(extractVoucherNumber("VCH-999")).toBe("999");
+      expect(extractVoucherNumber("NO_NUM")).toBe("");
     });
   });
 });

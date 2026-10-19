@@ -43,6 +43,13 @@
       "when": 1792405000000,
       "tag": "0005_busy_bill_override",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792406000000,
+      "tag": "0006_revert_busy_batch",
+      "breakpoints": true
     }
   ]
 }

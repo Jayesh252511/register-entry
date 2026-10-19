@@ -275,6 +275,16 @@ export async function wipeLocal() {
   }
 }
 
+export async function resetLocalStore() {
+  const d = await db();
+  await d.clear("entries");
+  await d.clear("meta");
+  all.clear();
+  state.meta = { ...DEFAULT_META };
+  emit({ entries: [] });
+  await sync();
+}
+
 export function pendingCount() {
   return state.entries.filter((e) => e._pending || e._cancel !== undefined).length;
 }

@@ -253,6 +253,15 @@ export function cleanWeight(raw: string): string {
   return raw.trim();
 }
 
+/** Extracts the numeric part from a BUSY voucher reference, e.g. "PC/1/26-27" -> "1", "PC/185/26-27" -> "185", "INV/007/26" -> "7" */
+export function extractVoucherNumber(ref: string): string {
+  if (!ref) return "";
+  const m = ref.match(/\/(\d+)\//) || ref.match(/(\d+)/);
+  if (!m || !m[1]) return "";
+  const num = parseInt(m[1], 10);
+  return Number.isNaN(num) ? m[1] : String(num);
+}
+
 export function parseBusyRows(grid: string[][], header: number, m: Mapping): BusyRow[] {
   const result: BusyRow[] = [];
   grid.slice(header + 1).forEach((cells, i) => {
@@ -270,12 +279,14 @@ export function parseBusyRows(grid: string[][], header: number, m: Mapping): Bus
 
     const rawWeight = get("weight_value");
     const cleanedWeight = cleanWeight(rawWeight);
+    const sourceRef = get("source_reference");
+    const extractedBill = extractVoucherNumber(sourceRef);
 
     const row: BusyRow = {
       row: header + i + 2,
       entry_date: busyDate(get("entry_date")),
-      source_reference: get("source_reference"),
-      bill_no: "",
+      source_reference: sourceRef,
+      bill_no: extractedBill,
       maal_diya: get("maal_diya"),
       maal_liya: "",
       weight_value: cleanedWeight,
