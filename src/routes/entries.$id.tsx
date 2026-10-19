@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useMatchRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { previousOf, suggestNextBill, useRegister } from "@/lib/local-store";
-import { CheckCircle2, List, Pencil, PlusCircle } from "lucide-react";
+import { previousOf, setEntryCancelled, suggestNextBill, useRegister } from "@/lib/local-store";
+import { Ban, CheckCircle2, List, Pencil, PlusCircle, Undo2 } from "lucide-react";
 import { z } from "zod";
 import { EntryCard, PageTitle } from "@/components/EntryViews";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,21 @@ function EntryDetail() {
         <Button asChild variant="ghost" size="lg">
           <Link to="/entries/$id/edit" params={{ id }}><Pencil className="h-4 w-4" /> Edit</Link>
         </Button>
+        {entry.cancelled_at ? (
+          <Button variant="outline" size="lg" onClick={() => void setEntryCancelled(id, false)}>
+            <Undo2 className="h-4 w-4" /> Undo Cancel
+          </Button>
+        ) : (
+          <Button
+            variant="destructive"
+            size="lg"
+            onClick={() => {
+              if (window.confirm(`Mark Bill No. ${entry.bill_no || "(blank)"} as cancelled?`)) void setEntryCancelled(id, true);
+            }}
+          >
+            <Ban className="h-4 w-4" /> This Bill is Cancelled
+          </Button>
+        )}
       </div>
 
       {!saved && history.length > 0 && (
@@ -95,7 +110,7 @@ function EntryDetail() {
           <ul className="space-y-2 text-sm">
             {history.map((h) => (
               <li key={h.id} className="rounded-md border bg-card px-3 py-2">
-                <span className="font-medium capitalize">{h.action === "create" ? "Created" : "Edited"}</span>{" "}
+                <span className="font-medium capitalize">{({ create: "Created", cancel: "Bill cancelled", uncancel: "Cancel undone" } as Record<string, string>)[h.action] ?? "Edited"}</span>{" "}
                 <span className="text-muted-foreground">{new Date(h.changed_at).toLocaleString()}</span>
                 {h.action === "update" && h.old_values && h.new_values && <Diff o={h.old_values} n={h.new_values} />}
               </li>

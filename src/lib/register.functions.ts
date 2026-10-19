@@ -15,10 +15,11 @@ export type Entry = {
   vehicle_no: string;
   created_at: string;
   updated_at: string;
+  cancelled_at?: string | null | undefined;
 };
 
 const COLS =
-  "id,register_serial_no,entry_date,bill_no,maal_diya,maal_liya,weight_value,weight_unit,vehicle_no,created_at,updated_at";
+  "id,register_serial_no,entry_date,bill_no,maal_diya,maal_liya,weight_value,weight_unit,vehicle_no,created_at,updated_at,cancelled_at";
 
 const filterSchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -304,4 +305,25 @@ export const pullChanges = createServerFn({ method: "GET" })
       unit: s?.default_weight_unit ?? "MT",
       businessName: s?.business_display_name ?? "Transport Register",
     };
+  });
+
+export const setCancelled = createServerFn({ method: "POST" })
+  .middleware([requireDevice])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), cancelled: z.boolean() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const db = await admin();
+    const now = new Date().toISOString();
+    const { data: row, error } = await db
+      .from("transport_entries")
+      .update({ cancelled_at: data.cancelled ? now : null, updated_at: now })
+      .eq("id", data.id)
+      .select(COLS)
+      .single();
+    if (error) throw new Error(error.message);
+    await db.from("audit_log").insert({
+      entry_id: data.id,
+      action: data.cancelled ? "cancel" : "uncancel",
+      actor_reference: context.deviceId,
+    });
+    return row as unknown as Entry;
   });
