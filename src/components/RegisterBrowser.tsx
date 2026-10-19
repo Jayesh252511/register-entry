@@ -35,7 +35,7 @@ export function RegisterBrowser({ showFilters }: { showFilters: boolean }) {
     try {
       const f = kind === "all" ? {} : filters;
       const rows = await exportEntries({ data: f });
-      if (!rows.length) return toast.info("No entries to export.");
+      if (!rows.length) { toast.info("No entries to export."); return; }
       await downloadRegisterXlsx(rows, exportFilename(f.from, f.to), rows.find((r) => r.weight_unit)?.weight_unit ?? "MT");
       toast.success(`Downloaded ${rows.length} entries`);
     } catch (e) {
@@ -139,7 +139,7 @@ export function RegisterBrowser({ showFilters }: { showFilters: boolean }) {
   );
 }
 
-function FI({ label, value, onChange, type = "text" }: { label: string; value?: string; onChange: (v: string) => void; type?: string }) {
+function FI({ label, value, onChange, type = "text" }: { label: string; value?: string | undefined; onChange: (v: string) => void; type?: string }) {
   return (
     <div className="space-y-1">
       <Label className="text-xs">{label}</Label>

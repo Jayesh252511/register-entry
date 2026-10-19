@@ -33,7 +33,7 @@ function Dashboard() {
     setExporting(true);
     try {
       const rows = await exportEntries({ data: {} });
-      if (!rows.length) return toast.info("No entries to export yet.");
+      if (!rows.length) { toast.info("No entries to export yet."); return; }
       await downloadRegisterXlsx(rows, exportFilename(), q.data?.unit ?? "MT");
       toast.success(`Downloaded ${rows.length} entries`);
     } catch (e) {
