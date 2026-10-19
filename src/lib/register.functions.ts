@@ -281,3 +281,27 @@ export const updateSettings = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+/** Rows changed since a timestamp (incl. archived) + settings, for device sync. */
+export const pullChanges = createServerFn({ method: "GET" })
+  .middleware([requireDevice])
+  .inputValidator((d: unknown) => z.object({ since: z.string().max(40).nullable() }).parse(d))
+  .handler(async ({ data }) => {
+    const db = await admin();
+    const out: (Entry & { archived_at: string | null })[] = [];
+    for (let i = 0; ; i += 1000) {
+      let q = db.from("transport_entries").select(COLS + ",archived_at");
+      if (data.since) q = q.gte("updated_at", data.since);
+      const { data: rows, error } = await q.order("updated_at", { ascending: true }).range(i, i + 999);
+      if (error) throw new Error(error.message);
+      out.push(...((rows ?? []) as unknown as (Entry & { archived_at: string | null })[]));
+      if (!rows || rows.length < 1000) break;
+    }
+    const { data: s } = await db.from("app_settings").select("*").eq("id", 1).single();
+    return {
+      rows: out,
+      nextBill: String(s?.next_bill_number ?? "168"),
+      unit: s?.default_weight_unit ?? "MT",
+      businessName: s?.business_display_name ?? "Transport Register",
+    };
+  });
