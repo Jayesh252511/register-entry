@@ -27,7 +27,7 @@ function EditEntry() {
     () =>
       e
         ? {
-            entry_date: e.entry_date,
+            entry_date: e.entry_date ?? "",
             bill_no: e.bill_no,
             maal_diya: e.maal_diya,
             maal_liya: e.maal_liya,
