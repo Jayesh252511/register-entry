@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Save, X, Eraser, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getSuggestions } from "@/lib/register.functions";
+import { useRegister } from "@/lib/local-store";
 
 export type FormValues = {
   entry_date: string;
@@ -45,7 +44,11 @@ export function EntryForm({
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [confirmClear, setConfirmClear] = useState(false);
   const busyRef = useRef(false);
-  const sugg = useQuery({ queryKey: ["suggestions"], queryFn: () => getSuggestions(), staleTime: 60_000 });
+  const { entries } = useRegister();
+  const sugg = useMemo(() => {
+    const u = (k: "maal_diya" | "maal_liya" | "vehicle_no") => [...new Set(entries.map((e) => e[k]))].slice(0, 200);
+    return { data: { maal_diya: u("maal_diya"), maal_liya: u("maal_liya"), vehicle_no: u("vehicle_no") } };
+  }, [entries]);
 
   useEffect(() => setV(initial), [initial]);
 
