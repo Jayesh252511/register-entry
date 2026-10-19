@@ -1,0 +1,9 @@
+{
+  "name": "Transport Register — Digital Roznamcha",
+  "short_name": "Register",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fb",
+  "theme_color": "#1e2638",
+  "icons": [{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+}
