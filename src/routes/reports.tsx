@@ -49,7 +49,7 @@ function Reports() {
     }
     return [...m.entries()].map(([k, g]) => ({ k, n: g.n, w: sumWeights(g.w) })).sort((a, b) => b.n - a.n);
   };
-  const byDay = useMemo(() => group((r) => r.entry_date).sort((a, b) => a.k.localeCompare(b.k)), [rows]);
+  const byDay = useMemo(() => group((r) => r.entry_date ?? "").sort((a, b) => a.k.localeCompare(b.k)), [rows]);
   const byDiya = useMemo(() => group((r) => r.maal_diya), [rows]);
   const byLiya = useMemo(() => group((r) => r.maal_liya), [rows]);
   const byVeh = useMemo(() => group((r) => r.vehicle_no), [rows]);
