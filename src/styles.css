@@ -124,3 +124,15 @@
 .print-only {
   display: none;
 }
+
+/* Cancelled bills: whole entry struck through in red */
+.cancelled-row td,
+.cancelled-row dd {
+  color: var(--destructive);
+  text-decoration: line-through;
+  text-decoration-color: var(--destructive);
+}
+.cancelled-row .cancel-tag {
+  text-decoration: none;
+  display: inline-block;
+}

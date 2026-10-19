@@ -21,10 +21,13 @@ export function EntryTable({ rows, actions = true }: { rows: Entry[]; actions?: 
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.id} className="border-t align-top hover:bg-accent/40">
+            <tr key={r.id} className={`border-t align-top hover:bg-accent/40 ${r.cancelled_at ? "cancelled-row" : ""}`}>
               <td className="px-3 py-2 tabular text-muted-foreground"><Serial r={r} /></td>
               <td className="px-3 py-2 tabular">{fmtDate(r.entry_date)}</td>
-              <td className="px-3 py-2 font-mono font-medium">{r.bill_no}</td>
+              <td className="px-3 py-2 font-mono font-medium">
+                {r.bill_no}
+                {r.cancelled_at && <CancelledTag />}
+              </td>
               <td className="break-words px-3 py-2">{r.maal_diya}</td>
               <td className="break-words px-3 py-2">{r.maal_liya}</td>
               <td className="px-3 py-2 text-right tabular">{fmtWeight(r.weight_value, r.weight_unit)}</td>
@@ -58,9 +61,9 @@ function RowActions({ id }: { id: string }) {
 export function EntryCard({ r, actions = true, tone }: { r: Entry; actions?: boolean | undefined; tone?: "new" | "prev" | undefined }) {
   const ring = tone === "new" ? "border-success border-2" : "";
   return (
-    <div className={`rounded-lg border bg-card p-3 ${ring}`}>
+    <div className={`rounded-lg border bg-card p-3 ${ring} ${r.cancelled_at ? "cancelled-row" : ""}`}>
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Sr. <Serial r={r} /></span>
+        <span className="text-xs text-muted-foreground">Sr. <Serial r={r} />{r.cancelled_at && <CancelledTag />}</span>
         {actions && (
           <div className="no-print">
             <RowActions id={r.id} />
@@ -120,4 +123,8 @@ export function Serial({ r }: { r: Entry }) {
   if (r._error) return <span className="font-semibold text-destructive" title={r._error}>⚠ Fix</span>;
   if (r._pending) return <span className="text-primary" title="Saved on this device, will sync when online">{r.register_serial_no ?? "…"} ⟳</span>;
   return <>{r.register_serial_no}</>;
+}
+
+export function CancelledTag() {
+  return <span className="cancel-tag ml-2 inline-block rounded border border-destructive px-1.5 text-[11px] font-bold uppercase text-destructive">Bill Cancelled</span>;
 }

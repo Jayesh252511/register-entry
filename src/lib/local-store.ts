@@ -12,6 +12,7 @@ export type LocalEntry = Omit<Entry, "register_serial_no"> & {
   archived_at?: string | null | undefined;
   _pending?: "create" | "update" | undefined;
   _error?: string | undefined;
+  _cancel?: boolean | undefined; // cancel/uncancel waiting to sync
 };
 
 type Meta = { nextBill: string; unit: string; businessName: string; lastPull: string | null };
@@ -188,6 +189,14 @@ export async function editEntry(id: string, v: EntryInput) {
   return e;
 }
 
+export async function setEntryCancelled(id: string, cancelled: boolean) {
+  const old = all.get(id);
+  if (!old) throw new Error("This entry no longer exists.");
+  await put({ ...old, cancelled_at: cancelled ? new Date().toISOString() : null, _cancel: cancelled });
+  emit();
+  void sync();
+}
+
 let syncing: Promise<void> | null = null;
 export function sync() {
   if (!started || typeof navigator === "undefined" || !navigator.onLine) return Promise.resolve();
@@ -197,11 +206,11 @@ export function sync() {
 
 async function doSync() {
   emit({ syncing: true });
-  const { createEntry, updateEntry, pullChanges } = await import("./register.functions");
+  const { createEntry, updateEntry, setCancelled, pullChanges } = await import("./register.functions");
   try {
     // 1. push pending changes, oldest first
     const pending = [...all.values()]
-      .filter((e) => e._pending)
+      .filter((e) => e._pending || e._cancel !== undefined)
       .sort((a, b) => a.created_at.localeCompare(b.created_at));
     for (const e of pending) {
       const payload = {
@@ -213,14 +222,14 @@ async function doSync() {
         vehicle_no: e.vehicle_no,
       };
       try {
-        const saved =
-          e._pending === "create"
-            ? await createEntry({ data: { ...payload, request_id: e.id } })
-            : await updateEntry({ data: { ...payload, id: e.id } });
+        let saved: LocalEntry = e;
+        if (e._pending === "create") saved = await createEntry({ data: { ...payload, request_id: e.id } });
+        else if (e._pending === "update") saved = await updateEntry({ data: { ...payload, id: e.id } });
+        if (e._cancel !== undefined) saved = await setCancelled({ data: { id: e.id, cancelled: e._cancel } });
         const cur = all.get(e.id);
         // if edited again while sending, keep the newer local change pending
         if (cur && cur.updated_at !== e.updated_at) {
-          await put({ ...cur, register_serial_no: saved.register_serial_no, _pending: "update" });
+          await put({ ...cur, register_serial_no: saved.register_serial_no, _pending: cur._pending ? "update" : undefined });
         } else {
           await put({ ...saved });
         }
@@ -237,7 +246,7 @@ async function doSync() {
     let maxTs = state.meta.lastPull;
     for (const r of res.rows) {
       const local = all.get(r.id);
-      if (!local?._pending) await put(r as LocalEntry);
+      if (!local?._pending && local?._cancel === undefined) await put(r as LocalEntry);
       else if (local.register_serial_no === null) await put({ ...local, register_serial_no: r.register_serial_no });
       if (!maxTs || r.updated_at > maxTs) maxTs = r.updated_at;
     }
@@ -267,5 +276,5 @@ export async function wipeLocal() {
 }
 
 export function pendingCount() {
-  return state.entries.filter((e) => e._pending).length;
+  return state.entries.filter((e) => e._pending || e._cancel !== undefined).length;
 }
