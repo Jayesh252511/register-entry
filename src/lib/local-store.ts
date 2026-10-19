@@ -9,9 +9,9 @@ import type { Entry } from "./register.functions";
 
 export type LocalEntry = Omit<Entry, "register_serial_no"> & {
   register_serial_no: number | null;
-  archived_at?: string | null;
-  _pending?: "create" | "update";
-  _error?: string;
+  archived_at?: string | null | undefined;
+  _pending?: "create" | "update" | undefined;
+  _error?: string | undefined;
 };
 
 type Meta = { nextBill: string; unit: string; businessName: string; lastPull: string | null };
