@@ -276,12 +276,20 @@ export async function wipeLocal() {
 }
 
 export async function resetLocalStore() {
+  if (syncing) {
+    try {
+      await syncing;
+    } catch {
+      /* ignore */
+    }
+  }
   const d = await db();
   await d.clear("entries");
   await d.clear("meta");
   all.clear();
   state.meta = { ...DEFAULT_META };
   emit({ entries: [] });
+  syncing = null;
   await sync();
 }
 

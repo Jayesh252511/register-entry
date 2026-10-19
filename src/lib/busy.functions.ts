@@ -127,25 +127,7 @@ export const revertBusyBatch = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = await admin();
 
-    // 1. Try RPC function first
-    try {
-      const { data: result, error } = await db.rpc("revert_busy_batch", {
-        p_id: data.id,
-        p_device: context.deviceId,
-      });
-      if (!error && result) {
-        return result as {
-          success: boolean;
-          deleted_entries: number;
-          next_register_serial: number;
-          next_bill_number: number;
-        };
-      }
-    } catch {
-      // Fall through to direct table operations
-    }
-
-    // 2. Direct fallback using service-role client
+    // Query entries associated with this import batch
     const { data: entries, error: entriesErr } = await db
       .from("transport_entries")
       .select("id")
@@ -157,17 +139,34 @@ export const revertBusyBatch = createServerFn({ method: "POST" })
 
     const entryIds = (entries ?? []).map((e) => e.id);
 
-    // Delete audit log references for entries
-    if (entryIds.length > 0) {
-      await db.from("audit_log").delete().in("entry_id", entryIds);
-      const { error: delErr } = await db
-        .from("transport_entries")
-        .delete()
-        .eq("import_batch_id", data.id);
+    // If no entries found by batch_id, check audit_log by batch id
+    if (entryIds.length === 0) {
+      const { data: auditEntries } = await db
+        .from("audit_log")
+        .select("entry_id")
+        .filter("new_values->>batch", "eq", data.id);
+
+      const extraIds = (auditEntries ?? [])
+        .map((a) => a.entry_id)
+        .filter((id): id is string => !!id);
+
+      if (extraIds.length > 0) {
+        entryIds.push(...extraIds);
+      }
+    }
+
+    // Delete audit logs and transport entries in chunks of 50 to avoid URL length issues
+    for (let i = 0; i < entryIds.length; i += 50) {
+      const chunk = entryIds.slice(i, i + 50);
+      await db.from("audit_log").delete().in("entry_id", chunk);
+      const { error: delErr } = await db.from("transport_entries").delete().in("id", chunk);
       if (delErr) {
         throw new Error(`Could not delete batch entries: ${delErr.message}`);
       }
     }
+
+    // Also delete any remaining entries by batch id
+    await db.from("transport_entries").delete().eq("import_batch_id", data.id);
 
     // Delete batch record
     await db.from("import_batches").delete().eq("id", data.id);
