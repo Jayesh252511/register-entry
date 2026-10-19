@@ -10,8 +10,8 @@ export function filterEntries(rows: LocalEntry[], f: Filters) {
   const veh = f.vehicle?.trim();
   return rows.filter(
     (r) =>
-      (!f.from || r.entry_date >= f.from) &&
-      (!f.to || r.entry_date <= f.to) &&
+      (!f.from || (!!r.entry_date && r.entry_date >= f.from)) &&
+      (!f.to || (!!r.entry_date && r.entry_date <= f.to)) &&
       (!bill || has(r.bill_no, bill)) &&
       (!veh || has(r.vehicle_no, veh)) &&
       (!party || has(r.maal_diya, party) || has(r.maal_liya, party)),

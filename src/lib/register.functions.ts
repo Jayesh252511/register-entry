@@ -6,7 +6,7 @@ import { admin } from "./device.server";
 export type Entry = {
   id: string;
   register_serial_no: number;
-  entry_date: string;
+  entry_date: string | null;
   bill_no: string;
   maal_diya: string;
   maal_liya: string;
@@ -46,17 +46,17 @@ function applyFilters(q: any, f: Filters) {
 }
 
 const entrySchema = z.object({
-  entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date"),
-  bill_no: z.string().trim().min(1, "Bill No. is required").max(50),
-  maal_diya: z.string().trim().min(1, "माल दिया is required").max(200),
-  maal_liya: z.string().trim().min(1, "माल लिया is required").max(200),
+  entry_date: z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/, "Enter a valid date"),
+  bill_no: z.string().trim().max(50),
+  maal_diya: z.string().trim().max(200),
+  maal_liya: z.string().trim().max(200),
   weight_value: z
     .string()
     .trim()
     .max(30)
     .refine((v) => v === "" || /^\d+(\.\d+)?$/.test(v), "वजन must be a number")
     .optional(),
-  vehicle_no: z.string().trim().min(1, "गाड़ी नं. is required").max(50),
+  vehicle_no: z.string().trim().max(50),
 });
 
 function dbError(msg: string) {
@@ -86,7 +86,7 @@ export const createEntry = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = await admin();
     const { data: row, error } = await db.rpc("create_entry", {
-      p_entry_date: data.entry_date,
+      p_entry_date: (data.entry_date || null) as unknown as string,
       p_bill_no: data.bill_no,
       p_maal_diya: data.maal_diya,
       p_maal_liya: data.maal_liya,
@@ -106,7 +106,7 @@ export const updateEntry = createServerFn({ method: "POST" })
     const db = await admin();
     const { data: row, error } = await db.rpc("update_entry", {
       p_id: data.id,
-      p_entry_date: data.entry_date,
+      p_entry_date: (data.entry_date || null) as unknown as string,
       p_bill_no: data.bill_no,
       p_maal_diya: data.maal_diya,
       p_maal_liya: data.maal_liya,

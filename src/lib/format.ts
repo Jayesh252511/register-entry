@@ -16,7 +16,8 @@ export function monthStart() {
 }
 
 /** "2026-10-19" -> "19-10-2026" */
-export function fmtDate(iso: string) {
+export function fmtDate(iso: string | null | undefined) {
+  if (!iso) return "—";
   const [y, m, d] = iso.split("-");
   return `${d}-${m}-${y}`;
 }
