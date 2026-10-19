@@ -14,13 +14,235 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          business_display_name: string
+          default_weight_unit: string
+          id: number
+          next_bill_number: number
+          next_register_serial: number
+          updated_at: string
+        }
+        Insert: {
+          business_display_name?: string
+          default_weight_unit?: string
+          id?: number
+          next_bill_number?: number
+          next_register_serial?: number
+          updated_at?: string
+        }
+        Update: {
+          business_display_name?: string
+          default_weight_unit?: string
+          id?: number
+          next_bill_number?: number
+          next_register_serial?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor_reference: string | null
+          changed_at: string
+          entry_id: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+        }
+        Insert: {
+          action: string
+          actor_reference?: string | null
+          changed_at?: string
+          entry_id?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Update: {
+          action?: string
+          actor_reference?: string | null
+          changed_at?: string
+          entry_id?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+        }
+        Relationships: []
+      }
+      auth_attempts: {
+        Row: {
+          attempted_at: string
+          id: number
+          ip: string | null
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          id?: number
+          ip?: string | null
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          id?: number
+          ip?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
+      devices: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          last_seen_at: string | null
+          revoked_at: string | null
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          last_seen_at?: string | null
+          revoked_at?: string | null
+          token_hash?: string
+        }
+        Relationships: []
+      }
+      transport_entries: {
+        Row: {
+          archived_at: string | null
+          bill_no: string
+          client_request_id: string | null
+          created_at: string
+          device_id: string | null
+          entry_date: string
+          id: string
+          maal_diya: string
+          maal_liya: string
+          register_serial_no: number
+          updated_at: string
+          vehicle_no: string
+          weight_unit: string | null
+          weight_value: number | null
+        }
+        Insert: {
+          archived_at?: string | null
+          bill_no: string
+          client_request_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          entry_date: string
+          id?: string
+          maal_diya: string
+          maal_liya: string
+          register_serial_no: number
+          updated_at?: string
+          vehicle_no: string
+          weight_unit?: string | null
+          weight_value?: number | null
+        }
+        Update: {
+          archived_at?: string | null
+          bill_no?: string
+          client_request_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          entry_date?: string
+          id?: string
+          maal_diya?: string
+          maal_liya?: string
+          register_serial_no?: number
+          updated_at?: string
+          vehicle_no?: string
+          weight_unit?: string | null
+          weight_value?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_entry: {
+        Args: {
+          p_bill_no: string
+          p_client_request_id: string
+          p_device_id: string
+          p_entry_date: string
+          p_maal_diya: string
+          p_maal_liya: string
+          p_vehicle_no: string
+          p_weight_value: number
+        }
+        Returns: {
+          archived_at: string | null
+          bill_no: string
+          client_request_id: string | null
+          created_at: string
+          device_id: string | null
+          entry_date: string
+          id: string
+          maal_diya: string
+          maal_liya: string
+          register_serial_no: number
+          updated_at: string
+          vehicle_no: string
+          weight_unit: string | null
+          weight_value: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transport_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_entry: {
+        Args: {
+          p_bill_no: string
+          p_device_id: string
+          p_entry_date: string
+          p_id: string
+          p_maal_diya: string
+          p_maal_liya: string
+          p_vehicle_no: string
+          p_weight_value: number
+        }
+        Returns: {
+          archived_at: string | null
+          bill_no: string
+          client_request_id: string | null
+          created_at: string
+          device_id: string | null
+          entry_date: string
+          id: string
+          maal_diya: string
+          maal_liya: string
+          register_serial_no: number
+          updated_at: string
+          vehicle_no: string
+          weight_unit: string | null
+          weight_value: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transport_entries"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       [_ in never]: never
