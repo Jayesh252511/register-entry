@@ -61,7 +61,7 @@ const entrySchema = z.object({
 
 function dbError(msg: string) {
   const m = msg.match(/DUPLICATE_BILL:(.*)/);
-  if (m) return new Error(`Bill No. ${m[1].trim()} is already used. Please choose a different number.`);
+  if (m) return new Error(`Bill No. ${(m[1] ?? "").trim()} is already used. Please choose a different number.`);
   if (msg.includes("NOT_FOUND")) return new Error("This entry no longer exists.");
   return new Error("Could not save. Please try again.");
 }
@@ -154,8 +154,8 @@ export const getEntry = createServerFn({ method: "GET" })
         id: string;
         action: string;
         changed_at: string;
-        old_values: Record<string, unknown> | null;
-        new_values: Record<string, unknown> | null;
+        old_values: { [k: string]: string | number | null } | null;
+        new_values: { [k: string]: string | number | null } | null;
       }[],
     };
   });
