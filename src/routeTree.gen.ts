@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ImportBusyRouteImport } from './routes/import-busy'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ReportsRouteImport } from './routes/reports'
@@ -21,6 +22,11 @@ import { Route as EntriesIdEditRouteImport } from './routes/entries.$id.edit'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportBusyRoute = ImportBusyRouteImport.update({
+  id: '/import-busy',
+  path: '/import-busy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewRoute = NewRouteImport.update({
@@ -61,6 +67,7 @@ const EntriesIdEditRoute = EntriesIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/import-busy': typeof ImportBusyRoute
   '/new': typeof NewRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/import-busy': typeof ImportBusyRoute
   '/new': typeof NewRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/import-busy': typeof ImportBusyRoute
   '/new': typeof NewRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/import-busy'
     | '/new'
     | '/register'
     | '/reports'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/import-busy'
     | '/new'
     | '/register'
     | '/reports'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/import-busy'
     | '/new'
     | '/register'
     | '/reports'
@@ -125,6 +137,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ImportBusyRoute: typeof ImportBusyRoute
   NewRoute: typeof NewRoute
   RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
@@ -140,6 +153,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/import-busy': {
+      id: '/import-busy'
+      path: '/import-busy'
+      fullPath: '/import-busy'
+      preLoaderRoute: typeof ImportBusyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new': {
@@ -208,6 +228,7 @@ const EntriesIdRouteWithChildren = EntriesIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ImportBusyRoute: ImportBusyRoute,
   NewRoute: NewRoute,
   RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
