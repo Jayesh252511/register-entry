@@ -28,5 +28,8 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
+
+# Local business data workbooks
+ListofSalesVouchers222222.xlsx
+*.xlsx.local
