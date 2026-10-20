@@ -381,7 +381,7 @@ export function BusyImport() {
         `${saved.inserted_count} added · ${saved.updated_count} updated · ${saved.duplicate_count} skipped · ${saved.failed_count} failed`,
       );
     } catch {
-      const found = (await history.refetch()).data?.find((b) => b.id === payload.id);
+      const found = (await history.refetch()).data?.find((b) => "id" in b && b.id === payload.id);
       if (found) {
         setResult(found);
         setUncertain(false);
