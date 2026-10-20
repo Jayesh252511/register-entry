@@ -50,7 +50,7 @@ const LABELS = {
 
 type Comparison = Awaited<ReturnType<typeof previewBusy>>;
 type Batch = Awaited<ReturnType<typeof confirmBusy>>;
-type Submission = Parameters<typeof confirmBusy>[0]["data"];
+type Submission = NonNullable<Parameters<typeof confirmBusy>[0]>["data"];
 const EMPTY_MAPPING = Object.fromEntries(BUSY_FIELDS.map((k) => [k, -1])) as Mapping;
 
 export function BusyImport() {
