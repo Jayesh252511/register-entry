@@ -198,6 +198,7 @@ export async function setEntryCancelled(id: string, cancelled: boolean) {
 }
 
 let syncing: Promise<void> | null = null;
+let needsSnapshot = true;
 export function sync() {
   if (!started || typeof navigator === "undefined" || !navigator.onLine) return Promise.resolve();
   if (!syncing) syncing = doSync().finally(() => (syncing = null));
@@ -242,8 +243,19 @@ async function doSync() {
       emit();
     }
     // 2. pull everything changed on the server
-    const res = await pullChanges({ data: { since: state.meta.lastPull } });
-    let maxTs = state.meta.lastPull;
+    const fullSnapshot = needsSnapshot;
+    const res = await pullChanges({ data: { since: fullSnapshot ? null : state.meta.lastPull } });
+    if (fullSnapshot) {
+      const serverIds = new Set(res.rows.map((r) => r.id));
+      const d = await db();
+      for (const [id, local] of all) {
+        if (!serverIds.has(id) && !local._pending && local._cancel === undefined) {
+          await d.delete("entries", id);
+          all.delete(id);
+        }
+      }
+    }
+    let maxTs = fullSnapshot ? null : state.meta.lastPull;
     for (const r of res.rows) {
       const local = all.get(r.id);
       if (!local?._pending && local?._cancel === undefined) await put(r as LocalEntry);
@@ -251,6 +263,7 @@ async function doSync() {
       if (!maxTs || r.updated_at > maxTs) maxTs = r.updated_at;
     }
     await saveMeta({ nextBill: res.nextBill, unit: res.unit, businessName: res.businessName, lastPull: maxTs });
+    needsSnapshot = false;
     emit({ syncing: false, lastSyncAt: Date.now(), syncError: null });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -268,6 +281,7 @@ export async function wipeLocal() {
   await d.clear("entries");
   await d.clear("meta");
   all.clear();
+  needsSnapshot = true;
   try {
     localStorage.removeItem("tr_authorized");
   } catch {
@@ -288,6 +302,7 @@ export async function resetLocalStore() {
   await d.clear("meta");
   all.clear();
   state.meta = { ...DEFAULT_META };
+  needsSnapshot = true;
   emit({ entries: [] });
   syncing = null;
   await sync();
