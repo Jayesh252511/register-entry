@@ -50,7 +50,7 @@ const LABELS = {
 
 type Comparison = Awaited<ReturnType<typeof previewBusy>>;
 type Batch = Awaited<ReturnType<typeof confirmBusy>>;
-type Submission = Parameters<typeof confirmBusy>[0]["data"];
+type Submission = NonNullable<Parameters<typeof confirmBusy>[0]>["data"];
 const EMPTY_MAPPING = Object.fromEntries(BUSY_FIELDS.map((k) => [k, -1])) as Mapping;
 
 export function BusyImport() {
@@ -381,7 +381,7 @@ export function BusyImport() {
         `${saved.inserted_count} added · ${saved.updated_count} updated · ${saved.duplicate_count} skipped · ${saved.failed_count} failed`,
       );
     } catch {
-      const found = (await history.refetch()).data?.find((b) => b.id === payload.id);
+      const found = (await history.refetch()).data?.find((b) => "id" in b && b.id === payload.id);
       if (found) {
         setResult(found);
         setUncertain(false);
